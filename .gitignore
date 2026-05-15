@@ -1,0 +1,19 @@
+# Rust build artefacts
+/target
+
+# Personal notes files — should never live inside the source repo
+*.jot
+*.notes
+
+# Local Claude Code settings — not for the repo
+.claude/settings.local.json
+
+# IDE / editor scratch
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS junk
+.DS_Store
+Thumbs.db

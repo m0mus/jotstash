@@ -1,0 +1,39 @@
+# Path to your .jot file. If omitted, jotlog uses
+# <Documents>/jotlog/log.jot and creates the directory on first run.
+# default_file = "C:/Users/<user>/Documents/jotlog/log.jot"
+
+[editor]
+keybindings = "default"          # only "default" supported in v1 (vim mode planned)
+line_wrap = true                 # word-wrap long lines at viewport width
+tab_width = 4
+
+[auto_sep]
+date = true                      # auto-stamp date on note creation (planned: time-gap detection)
+time_gap = ""                    # empty = disabled; e.g. "2h", "30m" (not yet wired)
+
+[ai]
+# OpenAI (default)
+provider    = "openai"
+model       = "gpt-4o-mini"
+base_url    = "https://api.openai.com/v1"
+api_key_env = "OPENAI_API_KEY"
+
+# Or, for Ollama (local):
+# provider    = "ollama"
+# model       = "llama3.2"
+# base_url    = "http://localhost:11434/v1"
+# (api_key_env omitted — no auth header sent)
+
+# Or, for LM Studio (local):
+# provider    = "lmstudio"
+# model       = "<model loaded in LM Studio>"
+# base_url    = "http://localhost:1234/v1"
+
+[spell]
+language = "en"                  # only "en" supported in v1
+
+[sync]
+enabled            = true        # auto-detected when file is inside a git repo
+pull_on_open       = true        # blocking pull on file open (5s timeout)
+push_on_save       = true        # background commit+push after each save
+idle_pull_interval = "5m"        # "0" disables
