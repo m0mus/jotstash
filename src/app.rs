@@ -666,18 +666,97 @@ impl App {
     }
 
     fn handle_mouse(&mut self, m: crossterm::event::MouseEvent) {
-        // Mouse scroll is the only mouse interaction we react to; the cursor
-        // intentionally stays put, like every other scrollable editor.
+        use crossterm::event::MouseButton;
         let max_scroll = self.buffer.line_count().saturating_sub(1);
         match m.kind {
+            // Wheel scroll — cursor stays put, only the viewport moves.
             MouseEventKind::ScrollDown => {
                 self.scroll = (self.scroll + 3).min(max_scroll);
             }
             MouseEventKind::ScrollUp => {
                 self.scroll = self.scroll.saturating_sub(3);
             }
+            // Left-click — move the cursor to the clicked position.
+            // Shift+click extends selection to the clicked position.
+            MouseEventKind::Down(MouseButton::Left) => {
+                let shift = m.modifiers.contains(KeyModifiers::SHIFT);
+                self.click_to_cursor(m.column, m.row, shift);
+            }
             _ => {}
         }
+    }
+
+    /// Translate a terminal click at `(col, row)` to a `(cursor_line, cursor_byte)`
+    /// in the buffer and move the cursor there. Wrap-aware: walks visible
+    /// segments to find the file line + segment under the click.
+    ///
+    /// Only fires in Normal mode — overlays (AI panel, filter, spell wizard,
+    /// command bar, etc.) own clicks within their own area.
+    fn click_to_cursor(&mut self, col: u16, row: u16, extend_selection: bool) {
+        if !matches!(self.mode, Mode::Normal) {
+            return;
+        }
+        // Above-the-status-bar editor area only.
+        let target_row = row as usize;
+        if target_row >= self.viewport_height {
+            return;
+        }
+
+        // Walk file lines from self.scroll, summing wrap segments, until we
+        // hit the visual row that was clicked.
+        let width = self.viewport_width.max(1);
+        let mut visual_row = 0usize;
+        let line_count = self.buffer.line_count();
+        let mut hit: Option<(usize, (usize, usize))> = None;
+
+        'outer: for li in self.scroll..line_count {
+            let raw = self.buffer.line_text(li).unwrap_or("");
+            let content = raw.trim_end_matches(|c: char| c == '\r' || c == '\n');
+            let segs = if self.line_wrap {
+                wrap_segments(content, width)
+            } else {
+                vec![(0, content.len())]
+            };
+            for seg in segs {
+                if visual_row == target_row {
+                    hit = Some((li, seg));
+                    break 'outer;
+                }
+                visual_row += 1;
+                if visual_row > target_row {
+                    break 'outer;
+                }
+            }
+        }
+
+        let (file_line, (seg_start, seg_end)) = match hit {
+            Some(v) => v,
+            None => return, // click landed below the last content row
+        };
+
+        let raw = self.buffer.line_text(file_line).unwrap_or("");
+        let content = raw.trim_end_matches(|c: char| c == '\r' || c == '\n');
+        let seg_text = &content[seg_start..seg_end];
+
+        // Map the column within the segment to a byte offset.
+        let byte_in_seg = byte_for_visual_col(seg_text, col as usize);
+        let new_byte = seg_start + byte_in_seg;
+
+        // Selection handling: shift+click extends from current cursor;
+        // plain click clears any existing selection.
+        self.history.break_batch();
+        if extend_selection {
+            if self.selection_anchor.is_none() {
+                self.selection_anchor = Some((self.cursor_line, self.cursor_byte));
+            }
+        } else {
+            self.selection_anchor = None;
+        }
+
+        self.cursor_line = file_line;
+        self.cursor_byte = new_byte;
+        self.update_preferred_col();
+        self.scroll_to_cursor();
     }
 
     // -------------------------------------------------------------------------

@@ -22,6 +22,10 @@ jobs:
         with:
           components: clippy
 
+      - name: Ensure cargo on PATH
+        shell: bash
+        run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
       - name: Cache cargo registry / target
         uses: Swatinem/rust-cache@v2
 
@@ -35,3 +39,30 @@ jobs:
       # pre-existing lints need cleanup; see the roadmap.
       - name: cargo clippy
         run: cargo clippy --all-targets
+
+      - name: cargo build --release
+        run: cargo build --release
+
+      - name: Upload artifact (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: jot-linux-x86_64
+          path: target/release/jot
+          if-no-files-found: error
+
+      - name: Upload artifact (macOS)
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: jot-macos-arm64
+          path: target/release/jot
+          if-no-files-found: error
+
+      - name: Upload artifact (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: jot-windows-x86_64
+          path: target/release/jot.exe
+          if-no-files-found: error

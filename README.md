@@ -292,19 +292,6 @@ The file text is the **source of truth**. Notes, tags, todos, and filter matches
 
 For the long version, see [SPEC.md](SPEC.md).
 
-## Roadmap
-
-Planned and probable, in no particular order:
-
-- Tag autocompletion (popup on `#`)
-- AI prompt presets (`[ai.presets]` quick-pick library)
-- Saved filters bound to F-keys
-- Vim mode (Normal / Insert / Visual)
-- Multi-file workspace
-- Export to standard Markdown
-- Better default dictionary / multi-language spell check
-- Anthropic provider for AI
-
 ## License
 
 [MIT](LICENSE).
