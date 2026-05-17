@@ -21,7 +21,7 @@ pub struct CursorRecord {
 }
 
 fn state_path() -> Option<PathBuf> {
-    dirs::config_dir().map(|d| d.join("jotlog").join("state.toml"))
+    dirs::config_dir().map(|d| d.join("jotstash").join("state.toml"))
 }
 
 /// Load persisted state; returns a default-empty `AppState` on any error.

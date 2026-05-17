@@ -1,6 +1,6 @@
-# jotlog
+# JotStash
 
-> A terminal-based, plain-text, captain's-log notes app — Markdown-aware,
+> A terminal-based, plain-text journal — Markdown-aware,
 > AI-assisted, spell-checked, and GitHub-synced. Single binary, no daemon,
 > no cloud account required.
 
@@ -22,7 +22,7 @@ press `Ctrl+Z`. Cursor jumps to the wrong row...
 
 A single keyboard-driven editor for the kind of notes that pile up over years: meeting minutes, debugging journals, "what did I do today" logs, half-baked ideas you want to find again. Stored as plain text in a Markdown-ish format, queryable by tag and date, polishable with an LLM when prose matters, and synced across machines via Git so your corporate laptop and home desktop see the same file without going through anyone's cloud.
 
-## Why jotlog
+## Why JotStash
 
 I wanted a notes tool that satisfied four constraints simultaneously:
 
@@ -35,7 +35,7 @@ Nothing on the market ticks all four (Obsidian: no terminal; Standard Notes: enc
 
 ## Features
 
-### Captain's-log file format
+### Journal file format
 
 A single `.jot` file holds the whole journal. Notes are separated by `===` lines with a title and ISO-8601 date:
 
@@ -101,8 +101,8 @@ The `===` line auto-stamps with the current time when you type `===` Enter. Date
 ## Install
 
 ```bash
-git clone https://github.com/m0mus/jotlog
-cd jotlog
+git clone https://github.com/m0mus/jotstash
+cd jotstash
 cargo install --path .
 ```
 
@@ -125,7 +125,7 @@ Requirements:
 jot
 ```
 
-On first run, the file `<Documents>/jotlog/log.jot` is opened (the parent directory is created if missing; the file itself appears on first save). Inside:
+On first run, the file `<Documents>/jotstash/log.jot` is opened (the parent directory is created if missing; the file itself appears on first save). Inside:
 
 - Type `===` then `Enter` to start a new note — the date is stamped for you
 - Write your note in plain Markdown
@@ -168,15 +168,15 @@ Full spec: [SPEC.md](SPEC.md).
 ## Configuration
 
 Config lives at:
-- **Windows:** `%APPDATA%\jotlog\config.toml`
-- **macOS / Linux:** `~/.config/jotlog/config.toml`
+- **Windows:** `%APPDATA%\jotstash\config.toml`
+- **macOS / Linux:** `~/.config/jotstash/config.toml`
 
 It's optional — defaults are sensible. A complete annotated example (also in `config.toml.example`):
 
 ```toml
 # Path to the notes file. If omitted, falls back to
-# <Documents>/jotlog/log.jot on first run.
-default_file = "C:/Users/you/Documents/jotlog/log.jot"
+# <Documents>/jotstash/log.jot on first run.
+default_file = "C:/Users/you/Documents/jotstash/log.jot"
 
 [editor]
 keybindings = "default"          # only "default" supported in v1 (vim mode planned)
@@ -236,9 +236,9 @@ idle_pull_interval = "5m"        # "0" disables
 The simplest path:
 
 1. Create a private GitHub repo (just for your notes).
-2. Clone it where jotlog expects the file:
+2. Clone it where JotStash expects the file:
    ```bash
-   git clone git@github.com:you/notes.git ~/Documents/jotlog
+   git clone git@github.com:you/notes.git ~/Documents/jotstash
    ```
 3. Run `jot`. Status bar shows `✓` once the initial pull completes.
 

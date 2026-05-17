@@ -1,7 +1,7 @@
 //! Spell-check engine and tokenizer.
 //!
 //! The engine wraps `symspell`. The dictionary is downloaded once on first
-//! use (see `download_dictionary`) and cached in `%APPDATA%\jotlog\` (or
+//! use (see `download_dictionary`) and cached in `%APPDATA%\jotstash\` (or
 //! the equivalent XDG path). A user dictionary at `dictionary.txt` augments
 //! it — words the user adds via `a` in the wizard go there.
 
@@ -39,7 +39,7 @@ impl std::fmt::Display for SpellError {
 }
 
 pub fn config_dir() -> Option<PathBuf> {
-    dirs::config_dir().map(|d| d.join("jotlog"))
+    dirs::config_dir().map(|d| d.join("jotstash"))
 }
 
 pub fn dict_path(lang: &str) -> Option<PathBuf> {

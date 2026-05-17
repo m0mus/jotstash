@@ -30,7 +30,7 @@ The file text is the **source of truth**. Notes, tags, todos, and filter matches
 | `index.rs` | `FileIndex` wrapping `ParseResult`; accessors for todos, tags, notes |
 | `persistence.rs` | Atomic write (temp + rename), mtime/hash, conflict detection |
 | `commands.rs` | `--add`, `--filter`, `--todo` (interactive + grep + add) |
-| `config.rs` | `Config` loaded from `%APPDATA%\jotlog\config.toml` (Windows) or `~/.config/jotlog/config.toml` |
+| `config.rs` | `Config` loaded from `%APPDATA%\jotstash\config.toml` (Windows) or `~/.config/jotstash/config.toml` |
 | `date.rs` | ISO date/datetime formatting and parsing helpers |
 | `main.rs` | CLI entry: dispatches to `commands::*` |
 

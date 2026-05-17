@@ -134,9 +134,9 @@ When no file is specified via the CLI or `default_file` in config, the app falls
 
 | Platform | Default path |
 |---|---|
-| Windows | `%USERPROFILE%\Documents\jotlog\log.jot` |
-| macOS | `~/Documents/jotlog/log.jot` |
-| Linux | `$XDG_DOCUMENTS_DIR/jotlog/log.jot` (or `~/Documents/jotlog/log.jot`) |
+| Windows | `%USERPROFILE%\Documents\jotstash\log.jot` |
+| macOS | `~/Documents/jotstash/log.jot` |
+| Linux | `$XDG_DOCUMENTS_DIR/jotstash/log.jot` (or `~/Documents/jotstash/log.jot`) |
 
 The parent directory is auto-created on first use. The file itself is created on first save (the app opens an empty buffer if the file doesn't exist yet).
 
@@ -147,7 +147,7 @@ The first time the default is used, a one-line hint is printed to stderr so the 
 ## 3. CLI Interface
 
 ```
-jotlog [FILE]                            # Open TUI (default file in config)
+jotstash [FILE]                            # Open TUI (default file in config)
 jot --add "text"                         # Quick-add note, no TUI
 jot --add --tags "oci,helidon" "..."     # Quick-add with tags
 jot --todo                               # Interactive todo list (open only)
@@ -431,7 +431,7 @@ Opened via `Ctrl+;` (or `F10` fallback) in default mode, or by typing `:` in Nor
 ### 6.1 Command history
 
 - `↑` / `↓` in command bar cycles **session-only history** (implemented).
-- Persistent cross-session history (`%LOCALAPPDATA%\jotlog\history` / `~/.local/state/jotlog/history`) and `Ctrl+R` reverse-search are **planned**.
+- Persistent cross-session history (`%LOCALAPPDATA%\jotstash\history` / `~/.local/state/jotstash/history`) and `Ctrl+R` reverse-search are **planned**.
 - Last-applied filter persistence across sessions is part of the planned V1 filter overlay.
 
 ### 6.2 Saved filters + key bindings *(planned, not yet built)*
@@ -539,7 +539,7 @@ No lock files, but the app detects external changes before overwriting:
 
 ### 9.4 Cursor position memory
 
-- Per-file cursor position stored in `%LOCALAPPDATA%\jotlog\state.toml` (Windows) / `~/.local/state/jotlog/state.toml` (Unix).
+- Per-file cursor position stored in `%LOCALAPPDATA%\jotstash\state.toml` (Windows) / `~/.local/state/jotstash/state.toml` (Unix).
 - Restored on file open.
 - Per-file last-applied filter stored alongside (separate from command history).
 
@@ -646,15 +646,15 @@ Apostrophes inside words (`don't`, `it's`) are preserved.
 
 Dictionary source: `https://raw.githubusercontent.com/wolfgarbe/SymSpell/master/SymSpell/frequency_dictionary_<lang>_*.txt`. Downloaded on first use of `:spell` after explicit user confirmation. Cached at:
 
-- `%APPDATA%\jotlog\dictionary_en.txt` (Windows)
-- `~/.config/jotlog/dictionary_en.txt` (XDG)
+- `%APPDATA%\jotstash\dictionary_en.txt` (Windows)
+- `~/.config/jotstash/dictionary_en.txt` (XDG)
 
 ### 10.5 User dictionary
 
 Words added via `a` are appended to:
 
-- `%APPDATA%\jotlog\dictionary.txt` (Windows)
-- `~/.config/jotlog/dictionary.txt` (XDG)
+- `%APPDATA%\jotstash\dictionary.txt` (Windows)
+- `~/.config/jotstash/dictionary.txt` (XDG)
 
 Plain text, one lowercase word per line. The user can edit this file by hand. Loaded once at the start of each spell session.
 
@@ -671,7 +671,7 @@ Only `en` is supported in MVP. Architecture supports adding more languages (Span
 
 ## 11. Configuration
 
-`%APPDATA%\jotlog\config.toml` (Windows) / `~/.config/jotlog/config.toml`.
+`%APPDATA%\jotstash\config.toml` (Windows) / `~/.config/jotstash/config.toml`.
 
 ```toml
 default_file = "C:/Users/user/notes/log.jot"
@@ -743,7 +743,7 @@ State (per-file cursor memory + last AI prompt) lives separately at `state.toml`
 **Principle:** the file text is the source of truth. Notes, tags, todos, and filter matches are *indexes over spans into the buffer*, not a separate model. Edits update the buffer; indexes are derived.
 
 ```
-jotlog/
+jotstash/
 ├── src/
 │   ├── main.rs              # CLI entry; dispatches to commands::* or App::run
 │   ├── app.rs               # TUI app state machine, render, key handling, all modes
@@ -794,7 +794,7 @@ Modules planned but not yet split out (currently inlined or pending implementati
 | Filter sort | Date, newest-first; file position as tiebreaker; malformed/missing dates sort last |
 | Filter UX | Live-picker panel (`Ctrl+P` or `:filter`): query input + results list. Selection follows the cursor in the editor. `Enter` commits, `Esc` restores. Editor view is never dimmed or hidden. Closing the panel does not clear the active filter. |
 | TODO CLI indexing | Interactive-only toggling; no scriptable `--done <n>` (indices aren't stable across runs) |
-| Spell check | On-demand via `:spell` or `F7`; selection-first scope, else current note; whole-file via `:spell all`; `symspell` engine; dictionary downloaded on first use with explicit user confirmation; user dictionary at `~/.config/jotlog/dictionary.txt` |
+| Spell check | On-demand via `:spell` or `F7`; selection-first scope, else current note; whole-file via `:spell all`; `symspell` engine; dictionary downloaded on first use with explicit user confirmation; user dictionary at `~/.config/jotstash/dictionary.txt` |
 | AI backends | OpenAI + Ollama (OpenAI-compatible, single provider impl) shipped; Anthropic deferred. Trait `AiProvider` allows additions without restructuring |
 | AI UX | Prompt-edit-regenerate loop (not a fixed action menu); last prompt persisted; Tab toggles original/candidate; current-note default scope, falls back to selection if present |
 | Tag autocomplete | Fuzzy popup on `#` keystroke (planned) |
@@ -896,7 +896,7 @@ Everything in MVP-1 plus the organizational and search features. **No AI, no vim
 | **Spell: multi-language** | Architecture supports it; need URL map + tokeniser tweaks for non-Latin scripts. |
 | **Spell: better dictionary / Unicode strategy** | `symspell` ASCII strategy limits coverage; switch to `UnicodeStringStrategy` and/or augment with a names list. |
 | **Configurable keybindings** | Proper `[bindings]` section with action enum + key-combo parser. |
-| Templates | `--template meeting` from `~/.config/jotlog/templates/`. |
+| Templates | `--template meeting` from `~/.config/jotstash/templates/`. |
 | `:follow-filter` | Visual dim of non-matching notes inline. |
 | Export to standard Markdown | Convert `.jot` → portable `.md`. |
 | Pin / star notes | Mark notes for quick access. |

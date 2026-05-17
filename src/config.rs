@@ -144,24 +144,24 @@ impl Config {
 
 pub fn config_path() -> Result<PathBuf> {
     let base = dirs::config_dir().context("could not determine config directory")?;
-    Ok(base.join("jotlog").join("config.toml"))
+    Ok(base.join("jotstash").join("config.toml"))
 }
 
 /// Default notes-file path used when neither the CLI nor the config specifies
 /// one. Tries, in order:
 ///
-/// 1. `<Documents>/jotlog/log.jot`
-/// 2. `<Home>/jotlog/log.jot`
+/// 1. `<Documents>/jotstash/log.jot`
+/// 2. `<Home>/jotstash/log.jot`
 /// 3. `./log.jot` (current directory) as the last resort.
 ///
 /// The path is *not* created on disk by this function — the caller decides
 /// whether to `create_dir_all` the parent.
 pub fn default_notes_path() -> PathBuf {
     if let Some(d) = dirs::document_dir() {
-        return d.join("jotlog").join("log.jot");
+        return d.join("jotstash").join("log.jot");
     }
     if let Some(h) = dirs::home_dir() {
-        return h.join("jotlog").join("log.jot");
+        return h.join("jotstash").join("log.jot");
     }
     PathBuf::from("log.jot")
 }

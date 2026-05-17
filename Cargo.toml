@@ -1,10 +1,10 @@
 [package]
-name = "jotlog"
+name = "jotstash"
 version = "0.1.0"
 edition = "2021"
-description = "Terminal-based, plain-text captain's-log notes app with Markdown highlighting, AI polish, spell check, and GitHub sync."
+description = "Terminal-based, plain-text journal app with Markdown highlighting, AI polish, spell check, and GitHub sync."
 license = "MIT"
-repository = "https://github.com/m0mus/jotlog"
+repository = "https://github.com/m0mus/jotstash"
 readme = "README.md"
 keywords = ["notes", "tui", "markdown", "git", "ai"]
 categories = ["command-line-utilities", "text-editors"]

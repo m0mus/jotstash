@@ -1,6 +1,6 @@
-# Path to your .jot file. If omitted, jotlog uses
-# <Documents>/jotlog/log.jot and creates the directory on first run.
-# default_file = "C:/Users/<user>/Documents/jotlog/log.jot"
+# Path to your .jot file. If omitted, JotStash uses
+# <Documents>/jotstash/log.jot and creates the directory on first run.
+# default_file = "C:/Users/<user>/Documents/jotstash/log.jot"
 
 [editor]
 keybindings = "default"          # only "default" supported in v1 (vim mode planned)

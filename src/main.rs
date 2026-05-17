@@ -20,7 +20,7 @@ use std::path::PathBuf;
 #[command(
     name = "jot",
     version,
-    about = "jotlog — terminal-based, plain-text captain's-log notes app"
+    about = "JotStash — terminal-based, plain-text journal app"
 )]
 struct Cli {
     /// Path to the .notes file (overrides --file and default_file)
