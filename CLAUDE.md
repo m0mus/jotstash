@@ -52,7 +52,7 @@ MVP-1 (TUI editor): **COMPLETE**
 - [x] Phase 11: Search overlay — Ctrl+F incremental find (yellow/green bg highlights, Enter to advance, Esc to close)
 - [x] Phase 12: Command bar — Ctrl+; / F10, :w :q :q! :wq :goto :set :todo (Up/Down history)
 - [x] Phase 13: Todo overlay — :todo opens full-screen list, Space/Enter toggles (undo-able, marks dirty), j/k navigate, a shows all
-- [x] Phase 14: Cursor memory + note navigation — state.toml (per-file cursor restore on open), Ctrl+J/Ctrl+K jump between note delimiters
+- [x] Phase 14: Note navigation — Ctrl+J/Ctrl+K jump between note delimiters (cursor opens at end-of-doc)
 
 ## File Format
 

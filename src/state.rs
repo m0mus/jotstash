@@ -2,22 +2,13 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 // ---------------------------------------------------------------------------
-// Persistent app state (cursor positions per file)
+// Persistent app state
 // ---------------------------------------------------------------------------
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct AppState {
     #[serde(default)]
-    pub cursor: Vec<CursorRecord>,
-    #[serde(default)]
     pub last_ai_prompt: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct CursorRecord {
-    pub path: String,
-    pub line: usize,
-    pub byte: usize,
 }
 
 fn state_path() -> Option<PathBuf> {
@@ -37,7 +28,7 @@ pub fn load_state() -> AppState {
     toml::from_str(&content).unwrap_or_default()
 }
 
-/// Persist `state`; silently swallows I/O errors (cursor memory is best-effort).
+/// Persist `state`; silently swallows I/O errors (best-effort).
 pub fn save_state(state: &AppState) {
     let path = match state_path() {
         Some(p) => p,

@@ -537,11 +537,10 @@ No lock files, but the app detects external changes before overwriting:
    - **Overwrite** — explicit opt-in to clobber the external change.
 4. **`--add` and interactive `--todo` toggles**: always re-read the file immediately before writing, never operate on a stale buffer. If the file changed between read and write, retry once then warn.
 
-### 9.4 Cursor position memory
+### 9.4 Initial cursor placement
 
-- Per-file cursor position stored in `%LOCALAPPDATA%\jotstash\state.toml` (Windows) / `~/.local/state/jotstash/state.toml` (Unix).
-- Restored on file open.
-- Per-file last-applied filter stored alongside (separate from command history).
+- On file open, cursor lands at end-of-doc. Journals are append-heavy: new entries go at the bottom.
+- No per-file cursor memory is persisted — keeps `state.toml` simple and avoids path-key matching issues across rebuilds.
 
 ### 9.5 GitHub-backed sync
 
@@ -714,7 +713,7 @@ language = "en"             # only "en" supported in MVP
 # "F2" = ":load todos"
 ```
 
-State (per-file cursor memory + last AI prompt) lives separately at `state.toml` in the same directory, managed by `src/state.rs`.
+State (last AI prompt) lives separately at `state.toml` in the same directory, managed by `src/state.rs`.
 
 ---
 
@@ -755,7 +754,7 @@ jotstash/
 │   ├── commands.rs          # --add, --filter, --todo CLI handlers
 │   ├── ai.rs                # AiProvider trait + OpenAiCompatProvider (OpenAI + Ollama)
 │   ├── spell.rs             # symspell wrapper, dictionary download, tokeniser
-│   ├── state.rs             # Per-file cursor memory + last AI prompt → state.toml
+│   ├── state.rs             # Last AI prompt → state.toml
 │   ├── date.rs              # ISO date/datetime formatting + parsing helpers
 │   └── config.rs            # Config + sub-configs loaded from config.toml
 ├── Cargo.toml
@@ -799,7 +798,7 @@ Modules planned but not yet split out (currently inlined or pending implementati
 | AI UX | Prompt-edit-regenerate loop (not a fixed action menu); last prompt persisted; Tab toggles original/candidate; current-note default scope, falls back to selection if present |
 | Tag autocomplete | Fuzzy popup on `#` keystroke (planned) |
 | Due dates | `due:YYYY-MM-DD` token on todo lines (planned) |
-| Persistence | Atomic writes (temp + rename); mtime+hash conflict detection; per-file cursor memory in `state.toml`; line-endings preserved |
+| Persistence | Atomic writes (temp + rename); mtime+hash conflict detection; line-endings preserved |
 | Templates | Skipped for v1 |
 | Session feature | Removed — auto-separation handled by date + time-gap only |
 

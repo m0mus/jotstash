@@ -19,7 +19,7 @@ use crate::buffer::TextBuffer;
 use crate::date;
 use crate::persistence::{detect_line_ending, write_atomic, ConflictStatus, FileSnapshot};
 use crate::spans::Span as ByteSpan;
-use crate::state::{load_state, save_state, CursorRecord};
+use crate::state::{load_state, save_state};
 
 // ---------------------------------------------------------------------------
 // Undo / redo history
@@ -448,20 +448,10 @@ impl App {
             sync_state = crate::sync::SyncState::Conflict;
         }
 
-        // Restore saved cursor position for this file (best-effort).
-        let path_key = path.to_string_lossy().into_owned();
-        let state = load_state();
-        let (cursor_line, cursor_byte) = state
-            .cursor
-            .iter()
-            .find(|r| r.path == path_key)
-            .map(|r| {
-                let lc = buffer.line_count();
-                let li = r.line.min(lc.saturating_sub(1));
-                let cl = line_content_len(buffer.line_text(li).unwrap_or(""));
-                (li, r.byte.min(cl))
-            })
-            .unwrap_or((0, 0));
+        // Always open at end-of-doc: this is a journal, new entries land at
+        // the bottom and that's where the cursor should be.
+        let cursor_line = buffer.line_count().saturating_sub(1);
+        let cursor_byte = line_content_len(buffer.line_text(cursor_line).unwrap_or(""));
 
         let mut app = Self {
             buffer,
@@ -509,7 +499,6 @@ impl App {
         let result = self.event_loop(&mut terminal);
         let _ = execute!(std::io::stdout(), DisableBracketedPaste, DisableMouseCapture);
         ratatui::restore();
-        self.save_cursor_state();
         result
     }
 
@@ -2822,6 +2811,10 @@ impl App {
                     self.jump_to_match(true);
                 }
             }
+            (_, KeyCode::F(5)) => {
+                self.history.break_batch();
+                self.cmd_sync();
+            }
 
             // ---- navigation ----
             (_, KeyCode::Down) => { self.history.break_batch(); self.move_down(1); }
@@ -3656,9 +3649,6 @@ impl App {
     }
 
     fn open_file(&mut self, path: PathBuf) {
-        // Persist cursor position for the file we're leaving.
-        self.save_cursor_state();
-
         let discard_msg = if self.dirty {
             Some("  (unsaved changes discarded)")
         } else {
@@ -3680,20 +3670,9 @@ impl App {
             (TextBuffer::empty(), None)
         };
 
-        // Restore saved cursor for the new file.
-        let path_key = path.to_string_lossy().into_owned();
-        let state = load_state();
-        let (cursor_line, cursor_byte) = state
-            .cursor
-            .iter()
-            .find(|r| r.path == path_key)
-            .map(|r| {
-                let lc = buffer.line_count();
-                let li = r.line.min(lc.saturating_sub(1));
-                let cl = line_content_len(buffer.line_text(li).unwrap_or(""));
-                (li, r.byte.min(cl))
-            })
-            .unwrap_or((0, 0));
+        // Always open at end-of-doc.
+        let cursor_line = buffer.line_count().saturating_sub(1);
+        let cursor_byte = line_content_len(buffer.line_text(cursor_line).unwrap_or(""));
 
         self.saved_hash = Some(hash_content(buffer.as_str()));
         self.buffer = buffer;
@@ -4131,27 +4110,6 @@ impl App {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
-
-    /// Persist the current cursor position for `self.file` into state.toml.
-    fn save_cursor_state(&self) {
-        let path_key = self.file.to_string_lossy().into_owned();
-        let mut state = load_state();
-        if let Some(rec) = state.cursor.iter_mut().find(|r| r.path == path_key) {
-            rec.line = self.cursor_line;
-            rec.byte = self.cursor_byte;
-        } else {
-            state.cursor.push(CursorRecord {
-                path: path_key,
-                line: self.cursor_line,
-                byte: self.cursor_byte,
-            });
-        }
-        const MAX_ENTRIES: usize = 100;
-        if state.cursor.len() > MAX_ENTRIES {
-            state.cursor.drain(0..state.cursor.len() - MAX_ENTRIES);
-        }
-        save_state(&state);
-    }
 
     /// Return the line index of the next `=== ` note delimiter after the cursor.
     fn next_note_delimiter(&self) -> Option<usize> {
@@ -4609,7 +4567,7 @@ fn help_content() -> Vec<Line<'static>> {
     lines.push(blank());
 
     lines.push(header("Sync"));
-    lines.push(row("", ":sync", "Manual pull+push (when in a git repo)"));
+    lines.push(row("F5", ":sync", "Manual pull+push (when in a git repo)"));
     lines.push(row("", "", "Pull on open, push on save are automatic"));
     lines.push(row("", "", "Status bar: ✓ idle · ↑N ahead · ↓… pulling · ↑… pushing"));
     lines.push(blank());

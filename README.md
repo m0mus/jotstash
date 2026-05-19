@@ -56,7 +56,6 @@ The `===` line auto-stamps with the current time when you type `===` Enter. Date
 - System clipboard (`Ctrl+C` / `Ctrl+X` / `Ctrl+V`), bracketed paste — large pastes land instantly and undo as a single step
 - Search overlay (`Ctrl+F`), find next / previous (`F3` / `Shift+F3`)
 - Mouse-wheel scroll
-- Per-file cursor memory across sessions
 
 ### Markdown highlighting
 
@@ -264,6 +263,7 @@ The full list is one keystroke away via `F1`. Here's a working subset:
 | `Ctrl+P` | Filter panel · `F4` / `Shift+F4` next / prev match |
 | `Ctrl+J` / `Ctrl+K` | Next / previous note (filter-aware) |
 | `Ctrl+L` | AI panel |
+| `F5` | Sync (git pull + reload — when in a git repo) |
 | `F7` | Spell check |
 | `F8` | Todo overlay |
 | `Ctrl+;` / `F10` | Command bar |
