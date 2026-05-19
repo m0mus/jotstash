@@ -376,6 +376,9 @@ pub struct App {
     /// Lazily-loaded spell engine. Built on the first successful spell run.
     spell_engine: Option<crate::spell::SpellEngine>,
     line_wrap: bool,
+    /// Tab stop width in columns. Tabs (typed or pasted) are expanded to
+    /// spaces using this stop; literal `\t` is never stored in the buffer.
+    tab_width: usize,
     /// True while draining a burst of queued input events (e.g. a paste).
     /// Insert operations during a burst form a single undo entry.
     in_burst: bool,
@@ -428,8 +431,9 @@ impl App {
             }
         }
 
+        let tab_width = (cfg.editor.tab_width as usize).max(1);
         let (buffer, snapshot) = if path.exists() {
-            let buf = TextBuffer::from_file(path)?;
+            let buf = load_buffer_with_tab_expansion(path, tab_width)?;
             let snap = FileSnapshot::capture(path).ok();
             (buf, snap)
         } else {
@@ -481,6 +485,7 @@ impl App {
             spell_cfg: cfg.spell.clone(),
             spell_engine: None,
             line_wrap: cfg.editor.line_wrap,
+            tab_width,
             in_burst: false,
             active_filter: None,
             sync_cfg: cfg.sync.clone(),
@@ -625,10 +630,16 @@ impl App {
         let normalised = normalise_line_endings(text, le);
         match &self.mode {
             Mode::Normal => {
-                if self.selection_anchor.is_some() {
-                    self.replace_selection(&normalised);
+                let start_col = if self.selection_anchor.is_some() {
+                    0
                 } else {
-                    self.insert_at_cursor(&normalised);
+                    self.cursor_visual_col()
+                };
+                let expanded = expand_tabs_at(&normalised, self.tab_width, start_col);
+                if self.selection_anchor.is_some() {
+                    self.replace_selection(&expanded);
+                } else {
+                    self.insert_at_cursor(&expanded);
                 }
             }
             Mode::OpenPrompt(_) | Mode::Search(_) | Mode::CommandBar(_) => {
@@ -2867,7 +2878,11 @@ impl App {
             }
             (_, KeyCode::Backspace) => self.delete_backward(),
             (_, KeyCode::Delete) => self.delete_forward(),
-            (_, KeyCode::Tab) => self.insert_str("    "),
+            (_, KeyCode::Tab) => {
+                let col = self.cursor_visual_col();
+                let n = self.tab_width - (col % self.tab_width);
+                self.insert_str(&" ".repeat(n));
+            }
             (m, KeyCode::Char(ch))
                 if !m.intersects(
                     KeyModifiers::CONTROL | KeyModifiers::ALT | KeyModifiers::SUPER,
@@ -3579,7 +3594,9 @@ impl App {
                     PullOutcome::FastForwarded => {
                         // File on disk may have new content — reload if buffer is clean.
                         if !self.dirty {
-                            if let Ok(buf) = crate::buffer::TextBuffer::from_file(&self.file) {
+                            if let Ok(buf) =
+                                load_buffer_with_tab_expansion(&self.file, self.tab_width)
+                            {
                                 self.buffer = buf;
                                 self.saved_hash = Some(hash_content(self.buffer.as_str()));
                                 self.snapshot = FileSnapshot::capture(&self.file).ok();
@@ -3613,7 +3630,7 @@ impl App {
     }
 
     fn reload(&mut self) {
-        match TextBuffer::from_file(&self.file) {
+        match load_buffer_with_tab_expansion(&self.file, self.tab_width) {
             Ok(buffer) => {
                 self.buffer = buffer;
                 self.saved_hash = Some(hash_content(self.buffer.as_str()));
@@ -3649,7 +3666,7 @@ impl App {
         };
 
         let (buffer, snapshot) = if path.exists() {
-            match TextBuffer::from_file(&path) {
+            match load_buffer_with_tab_expansion(&path, self.tab_width) {
                 Ok(buf) => {
                     let snap = FileSnapshot::capture(&path).ok();
                     (buf, snap)
@@ -4383,6 +4400,52 @@ fn centered_rect(width_pct: u16, height: u16, area: Rect) -> Rect {
 // ---------------------------------------------------------------------------
 // Unicode / byte helpers
 // ---------------------------------------------------------------------------
+
+/// Expand tab characters in `text` to spaces, snapping each tab to the next
+/// stop at a multiple of `tab_width`. Column resets after `\n`; `\r` is
+/// preserved unchanged (a following `\n` in CRLF will still reset the column).
+/// `start_col` is the visual column at which `text` begins (for pastes mid-line).
+fn expand_tabs_at(text: &str, tab_width: usize, start_col: usize) -> String {
+    if tab_width == 0 || !text.contains('\t') {
+        return text.to_string();
+    }
+    let mut out = String::with_capacity(text.len());
+    let mut col = start_col;
+    for ch in text.chars() {
+        match ch {
+            '\t' => {
+                let n = tab_width - (col % tab_width);
+                for _ in 0..n {
+                    out.push(' ');
+                }
+                col += n;
+            }
+            '\n' => {
+                out.push('\n');
+                col = 0;
+            }
+            '\r' => {
+                out.push('\r');
+            }
+            _ => {
+                out.push(ch);
+                col += UnicodeWidthChar::width(ch).unwrap_or(0);
+            }
+        }
+    }
+    out
+}
+
+/// Read `path` and expand any tab characters to spaces using `tab_width`.
+/// The buffer never contains literal `\t` — see `expand_tabs_at`.
+fn load_buffer_with_tab_expansion(
+    path: &std::path::Path,
+    tab_width: usize,
+) -> anyhow::Result<TextBuffer> {
+    let content = std::fs::read_to_string(path)?;
+    let expanded = expand_tabs_at(&content, tab_width, 0);
+    Ok(TextBuffer::new(expanded))
+}
 
 fn visual_col_for_byte(line: &str, byte: usize) -> usize {
     let byte = byte.min(line.len());
@@ -5827,6 +5890,46 @@ mod tests {
     fn wrap_fits_no_break() {
         assert_eq!(wrap_segments("hello", 10), vec![(0, 5)]);
         assert_eq!(wrap_segments("hello world", 11), vec![(0, 11)]);
+    }
+
+    #[test]
+    fn expand_tabs_at_start() {
+        // Tab at column 0 fills to next stop at 4.
+        assert_eq!(expand_tabs_at("\tfoo", 4, 0), "    foo");
+        // Tab at column 2 fills 2 spaces to reach 4.
+        assert_eq!(expand_tabs_at("\tfoo", 4, 2), "  foo");
+        // Tab exactly at a stop fills a full tab_width.
+        assert_eq!(expand_tabs_at("\tfoo", 4, 4), "    foo");
+    }
+
+    #[test]
+    fn expand_tabs_resets_column_on_newline() {
+        // After "\n" column resets; the second tab fills 4 (from col 0).
+        let out = expand_tabs_at("ab\tcd\n\txy", 4, 0);
+        assert_eq!(out, "ab  cd\n    xy");
+    }
+
+    #[test]
+    fn expand_tabs_pasted_bullets() {
+        // The Helidon-style bullet paste with tab-indented children.
+        let input = "- Helidon OCI\n\t- v2.0\n\t\t- On track\n";
+        let out = expand_tabs_at(input, 4, 0);
+        assert_eq!(
+            out,
+            "- Helidon OCI\n    - v2.0\n        - On track\n",
+        );
+    }
+
+    #[test]
+    fn expand_tabs_no_tabs_passthrough() {
+        assert_eq!(expand_tabs_at("hello world", 4, 0), "hello world");
+    }
+
+    #[test]
+    fn expand_tabs_preserves_cr() {
+        // CRLF lines: \r preserved, \n resets the column.
+        let out = expand_tabs_at("a\tb\r\n\tc", 4, 0);
+        assert_eq!(out, "a   b\r\n    c");
     }
 
     #[test]
